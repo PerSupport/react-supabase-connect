@@ -3,7 +3,7 @@ import { uploadProductImage, deleteProductImage } from "../services/storageServi
 
 type Props = {
     product?: any;
-    categories: any[];
+    categories?: any[];
     onSave: (product: any) => void;
     onCancel: () => void;
 };
@@ -138,7 +138,7 @@ export default function ProductForm({
                             <option value="">
                                 -- Select Category --
                             </option>
-                            {categories.map(category => (
+                            {categories?.map(category => (
                                 <option
                                     key={category.id}
                                     value={category.id}
