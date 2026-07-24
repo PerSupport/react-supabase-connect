@@ -1,0 +1,214 @@
+import { useEffect, useState } from "react";
+import ProductForm from "../components/ProductForm";
+import { addProduct, getProducts ,updateProduct, deleteProduct} from "../services/productService";
+import { supabase } from "../lib/supabase";
+import { useNavigate } from "react-router-dom";
+
+export default function ProductsPage() {
+
+    console.log("ProductsPage");
+
+    const [products, setProducts] = useState<any[]>([]);
+    const [showForm, setShowForm] = useState(false);
+    const [editingProduct, setEditingProduct] = useState<any>(null);
+    const [userEmail, setUserEmail] = useState("");
+    const navigate = useNavigate();
+
+    useEffect(() => {
+
+        console.log("useEffect");
+        
+        checkLogin();
+
+    }, []);
+
+    async function loadProducts() {
+
+        const data = await getProducts();
+
+        setProducts(data);
+
+    }
+    async function saveProduct(product?: any) {
+
+        if (editingProduct) {
+
+            await updateProduct(product);
+
+        }
+        else {
+
+            await addProduct(product);
+
+        }
+        setEditingProduct(null);
+
+        setShowForm(false);
+
+        loadProducts();
+
+    }
+    async function removeProduct(id: string) {
+
+        const ok = confirm("Bạn có chắc muốn xóa sản phẩm này?");
+
+        if (!ok) {
+            return;
+        }
+
+        await deleteProduct(id);
+
+        loadProducts();
+
+    }
+    async function loadUser() {
+
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
+
+        if (user) {
+
+            setUserEmail(user.email ?? "");
+
+        }
+
+    }
+    async function logout() {
+
+        await supabase.auth.signOut();
+
+        navigate("/");
+
+    }
+
+    async function checkLogin() {
+
+        const { data } = await supabase.auth.getSession();
+
+        if (!data.session) {
+
+            navigate("/");
+
+            return;
+
+        }
+
+        loadUser();
+
+        loadProducts();
+
+    }
+
+    return (
+
+        <div className="max-w-4xl mx-auto p-6">
+            <div className="flex justify-between items-center mb-6">
+                <p className="text-gray-500 mb-5">
+
+                    Xin chào: {userEmail}
+
+                </p>
+                <button
+
+                    onClick={logout}
+
+                    className="bg-red-600 text-white px-4 py-2 rounded"
+
+                >
+
+                    Logout
+
+                </button>
+            </div>
+            <h1 className="text-3xl font-bold mb-6">
+
+                Products
+
+            </h1>
+
+            <button
+                className="bg-green-600 text-white px-4 py-2 rounded mb-5"
+                onClick={() => setShowForm(true)}
+            >
+                Add Product
+            </button>
+            {
+                showForm && (
+
+                    <ProductForm
+
+                        product={editingProduct}
+
+                        onSave={saveProduct}
+
+                        onCancel={() => {
+
+                            setEditingProduct(null);
+
+                            setShowForm(false);
+
+                        }}
+
+                    />
+
+                )
+            }
+
+            {products.map(product => (
+
+                <div
+                    key={product.id}
+                    className="border rounded p-4 mb-4 bg-white shadow"
+                >
+
+                    <h2 className="font-bold text-xl">
+
+                        {product.name}
+
+                    </h2>
+
+                    <p>
+
+                        {Number(product.price).toLocaleString()} VNĐ
+
+                    </p>
+
+                    <p>
+
+                        {product.description}
+
+                    </p>
+                    <button
+
+                        className="bg-yellow-500 text-white px-3 py-1 rounded mt-3"
+
+                        onClick={() => {
+
+                            setEditingProduct(product);
+
+                            setShowForm(true);
+
+                        }}
+
+                    >
+
+                        Edit
+
+                    </button>
+                    <button
+                        className="bg-red-600 text-white px-3 py-1 rounded ml-3"
+                        onClick={() => removeProduct(product.id)}
+                    >
+                        Delete
+                    </button>
+
+                </div>
+
+            ))}
+
+        </div>
+
+    );
+
+}
