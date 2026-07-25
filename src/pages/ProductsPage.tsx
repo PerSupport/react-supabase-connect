@@ -8,6 +8,8 @@ import {
     deleteProduct,
 } from "../services/productService";
 import { getCategories } from "../services/categoryService";
+import useRealtime from "../hooks/useProductRealtime"
+import { supabase } from "../lib/supabase";
 
 export default function ProductsPage() {
     // ============================
@@ -58,6 +60,11 @@ export default function ProductsPage() {
     useEffect(() => {
         applyFilters();
     }, [searchText,selectedCategory, sortField, sortDirection,currentPage, products]);
+
+    useRealtime({
+        table : "sanpham",
+        onChanged: loadProducts,
+    });
 
     function applyFilters() {
         let result = [...products];
@@ -162,6 +169,37 @@ export default function ProductsPage() {
         setShowForm(false);
     }
     // ============================
+    // edge fuction
+    // ============================
+    async function generateProducts() {
+        // const res = await fetch(
+        //     "https://yrkjfgbzonbqukornqvj.supabase.co/functions/v1/generate-products",
+        //     {
+        //         method: "POST",
+        //         headers: {
+        //         "Content-Type": "application/json",
+        //         apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+        //         },
+        //         body: JSON.stringify({ count: 5 }),
+        //     }
+        //     );
+
+        //     console.log(await res.text());
+        const { data, error } = await supabase.functions.invoke(
+            "generate-products",
+            {
+                body: {
+                    count: 5,
+                },
+            }
+        );
+        const { data: sessionData } = await supabase.auth.getSession();
+        console.log("Session:", sessionData.session);
+        console.log("Data:", data);
+        console.log("Error:", error);
+
+    }
+    // ============================
     // UI
     // ============================
     const totalRecords = filteredProducts.length;
@@ -181,6 +219,12 @@ export default function ProductsPage() {
             <h2 className="text-2xl font-bold mb-5">
                 Products
             </h2>
+            <button
+                onClick={generateProducts}
+                className="bg-green-600 text-white px-4 py-2 rounded"
+            >
+                Generate 5 Products
+            </button>
             {
                 showForm && (
                     <ProductForm
